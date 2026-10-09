@@ -66,8 +66,9 @@ maze-chase/
 
 ## Submission Checklist
 
-- [ ] All 4 tasks completed
+- [x] All 4 tasks completed
 - [x] Multiple enemies work independently
 - [x] Power pellet freezes enemy correctly
 - [x] Speed ramp increases difficulty over time
+- [x] Score increases while alive and appears on game over
 - [ ] Code reviewed with LLM (include chat link)

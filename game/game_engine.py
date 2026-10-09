@@ -26,6 +26,7 @@ class GameEngine:
     def reset(self):
         self.walls = generate_maze(COLS, ROWS)
         self.player = Player(0, 0)
+        self.score = 0
         self.enemies = [
             Enemy(ROWS-1, COLS-1),
             Enemy(0, COLS-1),
@@ -92,6 +93,8 @@ class GameEngine:
             self.caught = True
         if self.player.rect.colliderect(self.exit_rect):
             self.won = True
+        if not self.caught and not self.won:
+            self.score += 1
 
     def draw(self):
         self.screen.fill((230, 220, 210))
@@ -120,7 +123,7 @@ class GameEngine:
         info=self.hud_font.render("Reach EXIT before the enemy catches you!  R=Restart",True,(200,200,200))
         self.screen.blit(info,(8,ROWS*CELL+3))
         speed_info = self.hud_font.render(
-            f"Speed tier: {self.speed_tier}  Enemy interval: {self.enemy_move_interval} frames",
+            f"Survived: {self.score // 60}s  Speed tier: {self.speed_tier}  Interval: {self.enemy_move_interval}f",
             True,
             (200,200,200),
         )
@@ -137,8 +140,10 @@ class GameEngine:
         self.screen.blit(surf,(0,0))
         msg=self.big_font.render(text,True,color)
         sub=self.font.render("Press R to Restart",True,(200,200,200))
+        score=self.font.render(f"Survived: {self.score // 60}s",True,(200,200,200))
         self.screen.blit(msg,(WIDTH//2-msg.get_width()//2,ROWS*CELL//2-30))
         self.screen.blit(sub,(WIDTH//2-sub.get_width()//2,ROWS*CELL//2+20))
+        self.screen.blit(score,(WIDTH//2-score.get_width()//2,ROWS*CELL//2+52))
 
     def run(self):
         running=True
