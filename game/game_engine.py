@@ -9,6 +9,7 @@ FPS = 60
 SPEEDUP_INTERVAL_MS = 15_000
 ENEMY_INTERVAL_STEP = 2
 MIN_ENEMY_INTERVAL = 5
+POWER_PELLET_FREEZE_MS = 5_000
 
 class GameEngine:
     def __init__(self):
@@ -30,6 +31,13 @@ class GameEngine:
             Enemy(0, COLS-1),
             Enemy(ROWS-1, 0),
         ]
+        self.pellet_rect = pygame.Rect(0, 0, 18, 18)
+        self.pellet_rect.center = (
+            (COLS//2-2)*CELL + CELL//2,
+            (ROWS//2)*CELL + CELL//2,
+        )
+        self.pellet_collected = False
+        self.freeze_started_at = None
         self.initial_enemy_move_interval = self.enemies[0].move_interval
         self.enemy_move_interval = self.initial_enemy_move_interval
         self.speed_tier = 0
@@ -47,8 +55,16 @@ class GameEngine:
         return True
 
     def update(self):
+        now = pygame.time.get_ticks()
+        if (
+            self.freeze_started_at is not None
+            and now - self.freeze_started_at >= POWER_PELLET_FREEZE_MS
+        ):
+            self.freeze_started_at = None
+            for enemy in self.enemies:
+                enemy.frozen = False
         if self.caught or self.won: return
-        elapsed_ms = pygame.time.get_ticks() - self.difficulty_start_time
+        elapsed_ms = now - self.difficulty_start_time
         max_speed_tier = (
             self.initial_enemy_move_interval - MIN_ENEMY_INTERVAL
             + ENEMY_INTERVAL_STEP - 1
@@ -64,6 +80,12 @@ class GameEngine:
                 enemy.move_interval = self.enemy_move_interval
         keys = pygame.key.get_pressed()
         self.player.move(keys, self.walls, ROWS, COLS)
+        if not self.pellet_collected and self.player.rect.colliderect(self.pellet_rect):
+            self.pellet_collected = True
+            self.freeze_started_at = now
+            for enemy in self.enemies:
+                enemy.frozen = True
+                enemy.timer = 0
         for enemy in self.enemies:
             enemy.update(self.walls, self.player, ROWS, COLS)
         if any(self.player.rect.colliderect(enemy.rect) for enemy in self.enemies):
@@ -85,6 +107,11 @@ class GameEngine:
         pygame.draw.rect(self.screen,(80,200,80),self.exit_rect,border_radius=4)
         lbl=self.exit_font.render("EXIT",True,(20,80,20))
         self.screen.blit(lbl,lbl.get_rect(center=self.exit_rect.center))
+        if not self.pellet_collected:
+            center = self.pellet_rect.center
+            pygame.draw.circle(self.screen,(70,55,30),center,10)
+            pygame.draw.circle(self.screen,(255,210,45),center,8)
+            pygame.draw.circle(self.screen,(255,250,190),(center[0]-3,center[1]-3),2)
         self.player.draw(self.screen)
         for enemy in self.enemies:
             enemy.draw(self.screen)
