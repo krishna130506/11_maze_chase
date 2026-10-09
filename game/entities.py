@@ -25,6 +25,14 @@ class Player:
         for px,py in [(rect.left,rect.top),(rect.right-1,rect.top),(rect.left,rect.bottom-1),(rect.right-1,rect.bottom-1)]:
             cr,cc=py//CELL,px//CELL
             if not(0<=cr<rows and 0<=cc<cols): return False
+        left_col, right_col = rect.left//CELL, (rect.right-1)//CELL
+        top_row, bottom_row = rect.top//CELL, (rect.bottom-1)//CELL
+        for row in range(top_row, bottom_row+1):
+            for col in range(left_col, right_col):
+                if walls[row][col][2]: return False
+        for row in range(top_row, bottom_row):
+            for col in range(left_col, right_col+1):
+                if walls[row][col][1]: return False
         return True
 
     def draw(self, screen):
