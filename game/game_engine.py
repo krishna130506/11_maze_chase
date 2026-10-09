@@ -6,6 +6,9 @@ COLS, ROWS = 13, 11
 WIDTH = COLS * CELL
 HEIGHT = ROWS * CELL + 50
 FPS = 60
+SPEEDUP_INTERVAL_MS = 15_000
+ENEMY_INTERVAL_STEP = 2
+MIN_ENEMY_INTERVAL = 5
 
 class GameEngine:
     def __init__(self):
@@ -27,6 +30,12 @@ class GameEngine:
             Enemy(0, COLS-1),
             Enemy(ROWS-1, 0),
         ]
+        self.initial_enemy_move_interval = self.enemies[0].move_interval
+        self.enemy_move_interval = self.initial_enemy_move_interval
+        self.speed_tier = 0
+        self.difficulty_start_time = pygame.time.get_ticks()
+        for enemy in self.enemies:
+            enemy.move_interval = self.enemy_move_interval
         self.exit_rect = pygame.Rect((COLS//2)*CELL+5, (ROWS//2)*CELL+5, CELL-10, CELL-10)
         self.caught = False
         self.won = False
@@ -39,6 +48,20 @@ class GameEngine:
 
     def update(self):
         if self.caught or self.won: return
+        elapsed_ms = pygame.time.get_ticks() - self.difficulty_start_time
+        max_speed_tier = (
+            self.initial_enemy_move_interval - MIN_ENEMY_INTERVAL
+            + ENEMY_INTERVAL_STEP - 1
+        ) // ENEMY_INTERVAL_STEP
+        speed_tier = min(elapsed_ms // SPEEDUP_INTERVAL_MS, max_speed_tier)
+        if speed_tier != self.speed_tier:
+            self.speed_tier = speed_tier
+            self.enemy_move_interval = max(
+                MIN_ENEMY_INTERVAL,
+                self.initial_enemy_move_interval - ENEMY_INTERVAL_STEP * self.speed_tier,
+            )
+            for enemy in self.enemies:
+                enemy.move_interval = self.enemy_move_interval
         keys = pygame.key.get_pressed()
         self.player.move(keys, self.walls, ROWS, COLS)
         for enemy in self.enemies:
@@ -68,7 +91,13 @@ class GameEngine:
         hud=pygame.Rect(0,ROWS*CELL,WIDTH,50)
         pygame.draw.rect(self.screen,(30,30,50),hud)
         info=self.hud_font.render("Reach EXIT before the enemy catches you!  R=Restart",True,(200,200,200))
-        self.screen.blit(info,(8,ROWS*CELL+14))
+        self.screen.blit(info,(8,ROWS*CELL+3))
+        speed_info = self.hud_font.render(
+            f"Speed tier: {self.speed_tier}  Enemy interval: {self.enemy_move_interval} frames",
+            True,
+            (200,200,200),
+        )
+        self.screen.blit(speed_info,(8,ROWS*CELL+26))
         if self.caught:
             self._overlay("CAUGHT!", (220,60,60))
         if self.won:
