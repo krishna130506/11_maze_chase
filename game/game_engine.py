@@ -22,7 +22,11 @@ class GameEngine:
     def reset(self):
         self.walls = generate_maze(COLS, ROWS)
         self.player = Player(0, 0)
-        self.enemy = Enemy(ROWS-1, COLS-1)
+        self.enemies = [
+            Enemy(ROWS-1, COLS-1),
+            Enemy(0, COLS-1),
+            Enemy(ROWS-1, 0),
+        ]
         self.exit_rect = pygame.Rect((COLS//2)*CELL+5, (ROWS//2)*CELL+5, CELL-10, CELL-10)
         self.caught = False
         self.won = False
@@ -37,8 +41,9 @@ class GameEngine:
         if self.caught or self.won: return
         keys = pygame.key.get_pressed()
         self.player.move(keys, self.walls, ROWS, COLS)
-        self.enemy.update(self.walls, self.player, ROWS, COLS)
-        if self.player.rect.colliderect(self.enemy.rect):
+        for enemy in self.enemies:
+            enemy.update(self.walls, self.player, ROWS, COLS)
+        if any(self.player.rect.colliderect(enemy.rect) for enemy in self.enemies):
             self.caught = True
         if self.player.rect.colliderect(self.exit_rect):
             self.won = True
@@ -58,7 +63,8 @@ class GameEngine:
         lbl=self.exit_font.render("EXIT",True,(20,80,20))
         self.screen.blit(lbl,lbl.get_rect(center=self.exit_rect.center))
         self.player.draw(self.screen)
-        self.enemy.draw(self.screen)
+        for enemy in self.enemies:
+            enemy.draw(self.screen)
         hud=pygame.Rect(0,ROWS*CELL,WIDTH,50)
         pygame.draw.rect(self.screen,(30,30,50),hud)
         info=self.hud_font.render("Reach EXIT before the enemy catches you!  R=Restart",True,(200,200,200))
